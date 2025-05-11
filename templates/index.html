@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recreate Video App!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+        .upload-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 40px 0;
+        }
+        .upload-box {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .upload-box:hover {
+            border-color: #4CAF50;
+            background-color: #f9f9f9;
+        }
+        .upload-box.has-file {
+            border-color: #4CAF50;
+            background-color: #f1f8e9;
+        }
+        .upload-box input {
+            display: none;
+        }
+        .file-info {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-1px);
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result-container {
+            display: none;
+            margin-top: 40px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .scores-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .score-box {
+            text-align: center;
+            padding: 10px;
+        }
+        .score {
+            font-size: 64px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 20px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        .subscore {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2196F3; /* Blue for subscores */
+            margin: 10px 0;
+        }
+        .score-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .details {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .loading-text {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .progress-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f3f3f3;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.5s ease;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .progress-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .stage-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        .error {
+            color: #f44336;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #ffebee;
+            display: none;
+        }
+        .download-button {
+            background-color: #2196F3;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        .download-button:hover {
+            background-color: #0b7dda;
+        }
+        .video-preview {
+            max-width: 100%;
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .video-container {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Recreate Videos!</h1>
+    <p>Upload a reference video and your recreation to get a sync score! </p>
+    <p>Make sure your recreation is shorter than the reference video or exact same length! </p>
+    <p>It will only track the most prominent person in the video at all times!</p>
+    
+    <div class="error" id="error"></div>
+    
+    <div class="upload-container">
+        <div class="upload-box" onclick="document.getElementById('reference_video').click()">
+            <h3>Reference Video</h3>
+            <p>Click to upload the original video</p>
+            <p class="file-info" id="ref-file-info"></p>
+            <input type="file" id="reference_video" accept="video/mp4,video/mov,video/avi,video/mkv">
+        </div>
+        
+        <div class="upload-box" onclick="document.getElementById('user_video').click()">
+            <h3>Your Recreation</h3>
+            <p>Click to upload your recreation</p>
+            <p class="file-info" id="user-file-info"></p>
+            <input type="file" id="user_video" accept="video/mp4,video/mov,video/avi,video/mkv">
+        </div>
+    </div>
+    
+    <button id="compare" disabled>Compare Videos</button>
+    
+    <div class="loading" id="loading">
+        <p class="loading-text">Processing videos...</p>
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="stage-info">
+                <span id="stage-text">Initializing...</span>
+                <span id="progress-percentage">0%</span>
+            </div>
+            <p class="progress-text" id="progress-text"></p>
+        </div>
+    </div>
+    
+    <div class="result-container" id="result">
+        <h2>Sync Score</h2>
+        <div class="scores-container">
+            <div class="score-box">
+                <div class="score" id="score"></div>
+                <div class="score-label">Overall Score</div>
+            </div>
+            <div class="score-box">
+                <div class="subscore" id="pose-score"></div>
+                <div class="score-label">Pose Score</div>
+            </div>
+            <div class="score-box">
+                <div class="subscore" id="face-score"></div>
+                <div class="score-label">Face Score</div>
+            </div>
+        </div>
+        <div class="details" id="details"></div>
+        
+        <div class="video-container">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('comparison-tab')">Comparison Video</div>
+                <div class="tab" onclick="switchTab('overlay-tab')">Overlay Video</div>
+            </div>
+            
+            <div id="comparison-tab" class="tab-content active">
+                <h3>Side-by-Side Comparison</h3>
+                <p>Reference video on the left, your recreation on the right</p>
+                <video id="comparison-video" class="video-preview" controls>
+                    Your browser does not support the video tag.
+                </video>
+                <div>
+                    <a id="comparison-download-link">
+                        <button class="download-button">Download Comparison Video</button>
+                    </a>
+                </div>
+            </div>
+            
+            <div id="overlay-tab" class="tab-content">
+                <h3>Recreation with Score Overlay</h3>
+                <p>Your recreation with sync score overlaid</p>
+                <video id="overlay-video" class="video-preview" controls>
+                    Your browser does not support the video tag.
+                </video>
+                <div>
+                    <a id="overlay-download-link">
+                        <button class="download-button">Download Overlay Video</button>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables to track the current processing state
+        let currentProcessingController = null; // AbortController for cancellation
+        let progressInterval = null; // Interval for the simulated progress
+        
+        const referenceVideo = document.getElementById('reference_video');
+        const userVideo = document.getElementById('user_video');
+        const compareButton = document.getElementById('compare');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const score = document.getElementById('score');
+        const poseScore = document.getElementById('pose-score');
+        const audioScore = document.getElementById('face-score');
+        const details = document.getElementById('details');
+        const error = document.getElementById('error');
+        const refFileInfo = document.getElementById('ref-file-info');
+        const userFileInfo = document.getElementById('user-file-info');
+        const comparisonDownloadLink = document.getElementById('comparison-download-link');
+        const overlayDownloadLink = document.getElementById('overlay-download-link');
+        const comparisonVideo = document.getElementById('comparison-video');
+        const overlayVideo = document.getElementById('overlay-video');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const stageText = document.getElementById('stage-text');
+        const progressPercentage = document.getElementById('progress-percentage');
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function updateFileInfo(file, infoElement, boxElement) {
+            if (file) {
+                infoElement.textContent = `${file.name} (${formatFileSize(file.size)})`;
+                boxElement.classList.add('has-file');
+            } else {
+                infoElement.textContent = '';
+                boxElement.classList.remove('has-file');
+            }
+        }
+        
+        function checkFiles() {
+            compareButton.disabled = !(referenceVideo.files.length > 0 && userVideo.files.length > 0);
+        }
+        
+        function switchTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show the selected tab content
+            document.getElementById(tabId).classList.add('active');
+            
+            // Add active class to the clicked tab
+            event.currentTarget.classList.add('active');
+        }
+        
+        // Function to update progress visually
+        function updateProgressDisplay(percent) {
+            progressFill.style.width = `${percent}%`;
+            progressPercentage.textContent = `${Math.round(percent)}%`;
+        }
+        
+        // Function to cancel any ongoing processing
+        function cancelCurrentProcessing() {
+            // Cancel the fetch request if one is in progress
+            if (currentProcessingController) {
+                currentProcessingController.abort();
+                currentProcessingController = null;
+            }
+            
+            // Stop the progress simulation
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            
+            // Reset UI elements
+            loading.style.display = 'none';
+            compareButton.disabled = false;
+        }
+        
+        // Modified event listeners for file uploads to cancel ongoing processing
+        referenceVideo.addEventListener('change', (e) => {
+            // Cancel any ongoing processing
+            cancelCurrentProcessing();
+            
+            // Continue with normal file handling
+            updateFileInfo(e.target.files[0], refFileInfo, e.target.parentElement);
+            checkFiles();
+        });
+        
+        userVideo.addEventListener('change', (e) => {
+            // Cancel any ongoing processing
+            cancelCurrentProcessing();
+            
+            // Continue with normal file handling
+            updateFileInfo(e.target.files[0], userFileInfo, e.target.parentElement);
+            checkFiles();
+        });
+        
+        // Modified compare button handler with simplified progress and cancellation support
+        compareButton.addEventListener('click', async () => {
+            // Clear previous results
+            error.style.display = 'none';
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            compareButton.disabled = true;
+            
+            // Reset progress display
+            updateProgressDisplay(0);
+            stageText.textContent = 'Processing...';
+            progressText.textContent = '';
+            
+            // Start simulated progress that increases by 1% per second
+            let currentProgress = 0;
+            progressInterval = setInterval(() => {
+                if (currentProgress < 99) {
+                    currentProgress += 1;
+                    updateProgressDisplay(currentProgress);
+                }
+            }, 1000); // Update every 1 second
+            
+            // Create FormData with the files
+            const formData = new FormData();
+            formData.append('reference_video', referenceVideo.files[0]);
+            formData.append('user_video', userVideo.files[0]);
+            
+            // Create AbortController for cancellation
+            currentProcessingController = new AbortController();
+            
+            try {
+                // Make fetch request with the abort signal
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                    signal: currentProcessingController.signal,
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                // Handle the stream
+                while (true) {
+                    const {value, done} = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, {stream: true});
+                    const lines = buffer.split('\n\n');
+                    buffer = lines.pop() || '';
+                    
+                    for (const line of lines) {
+                        if (!line.trim() || !line.startsWith('data: ')) continue;
+                        
+                        try {
+                            const jsonData = line.replace('data: ', '');
+                            const data = JSON.parse(jsonData);
+                            
+                            if (data.error) {
+                                // Error handling
+                                error.textContent = data.error;
+                                error.style.display = 'block';
+                                loading.style.display = 'none';
+                                compareButton.disabled = false;
+                                clearInterval(progressInterval);
+                                progressInterval = null;
+                                currentProcessingController = null;
+                                break;
+                            }
+                            
+                            if (data.complete) {
+                                // Complete handling - we got the final result
+                                
+                                // First update progress to 100%
+                                updateProgressDisplay(100);
+                                
+                                // Stop the progress simulation
+                                clearInterval(progressInterval);
+                                progressInterval = null;
+                                currentProcessingController = null;
+                                
+                                // Display scores
+                                score.textContent = `${data.overall_score.adjusted}%`;
+                                poseScore.textContent = `${data.pose_score.adjusted}%`;
+                                audioScore.textContent = `${data.face_score.adjusted}%`;
+                                
+                                // Update details
+                                details.innerHTML = `
+                                    Your video duration: ${data.details.your_duration}s<br>
+                                    Reference video duration: ${data.details.reference_duration}s<br>
+                                    Frames analyzed: ${data.details.frames_analyzed} (${data.details.fps} FPS)
+                                `;
+                                
+                                // Set up video players and download links
+                                if (data.comparison_video) {
+                                    const comparisonUrl = `/result/${data.comparison_video}`;
+                                    comparisonVideo.src = comparisonUrl;
+                                    comparisonDownloadLink.href = comparisonUrl;
+                                    comparisonDownloadLink.download = "sync_comparison.mp4";
+                                }
+                                
+                                if (data.overlay_video) {
+                                    const overlayUrl = `/result/${data.overlay_video}`;
+                                    overlayVideo.src = overlayUrl;
+                                    overlayDownloadLink.href = overlayUrl;
+                                    overlayDownloadLink.download = "sync_overlay.mp4";
+                                }
+                                
+                                // Show result and hide loading
+                                result.style.display = 'block';
+                                loading.style.display = 'none';
+                                compareButton.disabled = false;
+                                break;
+                            }
+                            // Note: We're intentionally not updating progress based on server messages
+                            // as we're using our own simulated progress
+                        } catch (e) {
+                            console.error('Error parsing SSE data:', e);
+                        }
+                    }
+                }
+            } catch (e) {
+                // Handle errors, including AbortError when cancelled
+                if (e.name === 'AbortError') {
+                    console.log('Processing was cancelled');
+                } else {
+                    console.error('Error:', e);
+                    error.textContent = e.message || 'An error occurred while processing the videos';
+                    error.style.display = 'block';
+                }
+                
+                // Clean up regardless of error type
+                loading.style.display = 'none';
+                compareButton.disabled = false;
+                clearInterval(progressInterval);
+                progressInterval = null;
+                currentProcessingController = null;
+            }
+        });
+    </script>
+</body>
+</html>
